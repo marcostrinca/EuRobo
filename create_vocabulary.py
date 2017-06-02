@@ -76,8 +76,8 @@ for i in range(0, nb_words - SEQLEN, STEP):
     input_words.append(total_words[i:i + SEQLEN])
     label_words.append(total_words[i + SEQLEN])
 
-for i in range(11, 20):
-    print(input_words[i], "->", label_words[i])
+# for i in range(11, 20):
+#     print(input_words[i], "->", label_words[i])
 
 
 ######### VECTORIZE INPUTS
@@ -91,16 +91,16 @@ for i, input_word in enumerate(input_words):
 
 ####### BUILD THE MODEL
 model = Sequential()
-model.add(SimpleRNN(512, return_sequences=False, input_shape=(SEQLEN, nb_words)))
+model.add(SimpleRNN(256, return_sequences=False, input_shape=(SEQLEN, nb_words)))
 model.add(Dense(nb_words))
 model.add(Activation("softmax"))
 model.compile(loss="categorical_crossentropy", optimizer="rmsprop")
 
 batch_size = 128
-for i in range(50):
-    print("=" * 50)
+for i in range(10):
+    print("=" * 10)
     print("Iteration #: %d" % (i))
-    model.fit(X, y, batch_size=batch_size, epoch=1)
+    model.fit(X, y, batch_size=batch_size, epochs=1)
     
     # testing, pick a sequence randomly as seed and use it to generate text from
     # model for the next 100 steps
@@ -108,7 +108,7 @@ for i in range(50):
     test_words = input_words[test_idx]
     print("Seed: %s" % (test_words))
     print(test_words, end="")
-    for j in range(100):
+    for j in range(10):
         Xtest = np.zeros((1, SEQLEN, nb_words))
         for k, wd in enumerate(test_words):
             Xtest[0, k, word2idx[wd]] = 1
