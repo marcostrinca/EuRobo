@@ -63,7 +63,7 @@ def get_vocab(lst):
     # this way return the characters
     # vocab_count = Counter(w for txt in lst for w in txt.split())
     # vocab = list(map(lambda x: x[0], sorted(vocab_count.items(), key=lambda x: -x[1])))
-    return vocab[:1000]
+    return vocab
 
 training_data = get_vocab(text)
 
@@ -82,7 +82,7 @@ print ('qdd de palavras únicas:', vocab_size)
 
 # Parameters
 learning_rate = 0.001
-training_iters = 50000
+training_iters = 200000
 display_step = 10000
 n_input = 5
 
@@ -179,7 +179,7 @@ with tf.Session() as session:
             symbols_in = [training_data[i] for i in range(offset, offset + n_input)]
             symbols_out = training_data[offset + n_input]
             symbols_out_pred = reverse_dictionary[int(tf.argmax(onehot_pred, 1).eval())]
-            print("%s - [%s] vs [%s]" % (symbols_in,symbols_out,symbols_out_pred))
+            #print("%s - [%s] vs [%s]" % symbols_in,symbols_out,symbols_out_pred)
         step += 1
         offset += (n_input+1)
     print("Optimization Finished!")
@@ -192,6 +192,9 @@ with tf.Session() as session:
         sentence = input(prompt)
         sentence = sentence.strip()
         words = sentence.split(' ')
+        print('entrada: ', words)
+        print('qdd palavras: ', len(words))
+
         if len(words) != n_input:
             continue
         try:
