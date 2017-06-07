@@ -22,7 +22,4 @@ def getFaceCoordinates(image):
     face = rects[0]
     bounding_box = [face[0], face[1], face[0] + face[2], face[1] + face[3]]
 
-    # return map((lambda x: x), bounding_box)
     return bounding_box
-
-
