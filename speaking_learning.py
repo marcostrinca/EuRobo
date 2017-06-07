@@ -55,3 +55,23 @@ print('Sample data', data[:10], [reverse_dictionary[i] for i in data[:10]])
 
 data_index = 0
 
+
+####################################
+### Approach 1 - treino uma lista de palavras como input e a próxima como output
+SEQLEN = 5
+STEP = 1
+input_words = []
+label_words = []
+
+for i in range(0, vocabulary_size - SEQLEN, STEP):
+    input_words.append(data[i:i + SEQLEN])
+    label_words.append(data[i + SEQLEN])
+
+### Test
+n_steps = 50
+n_neurons = 200
+n_layers = 3
+num_encoder_symbols = 20000
+num_decoder_symbols = 20000
+embedding_size = 150
+learning_rate = 0.01
