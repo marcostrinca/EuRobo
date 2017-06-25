@@ -29,7 +29,7 @@ def get_vocab(text):
 	words = text.split()
 	no_hiphen = [i.replace('-','') for i in words]
 	no_point_and_coma =  [i.replace(';',',') for i in words]
-	return no_point_and_coma[:10000]
+	return no_point_and_coma[:100]
 
 training_data = get_vocab(text)
 vocab_size = len(training_data)
