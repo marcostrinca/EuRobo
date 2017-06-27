@@ -17,176 +17,189 @@ plt.rcParams['ytick.labelsize'] = 12
 def plot_image(image):
 	plt.imshow(image, cmap="gray", interpolation="nearest")
 	plt.axis("off")
-
-# crop image by the center
-def crop_center(img,cropx,cropy):
-	y,x = img.shape
-	startx = x//2-(cropx//2)
-	starty = y//2-(cropy//2)    
-	return img[starty:starty+cropy,startx:startx+cropx]
-
 ########## ----------
 
 ########## TRAINING DATA
 labels = np.array([name for name in os.listdir("./Data/gestos")])
-print(labels.shape)
-
 n_labels = len(labels)
-n_frames = 60
-n_total_frames = n_frames * n_labels
-size = 128, 96
+print(labels)
 
+# frame specs
+n_frames = 120
+n_total_frames = n_frames * n_labels
+
+img_width = 128
+img_height = 96
+size = img_width, img_height
+n_channels = 1
+pixel_depth = 255
+
+# prepare data
 idx_x = 0
 idx_folder = 0
-X_arr = np.zeros((n_total_frames,96,128))
+X_arr = np.zeros((n_total_frames, 96, 128))
 Y_arr = np.zeros((n_total_frames,))
+
 for folder in labels:
 
 	# path das pastas
 	path = 'Data/gestos/{0}'.format(folder)
 	print(path)
-	
-	# bora ler os arquivos
-	# cria uma funcaozinha para ler os arquivos
-	read = lambda imname: Image.open(imname)
 
 	# pra cada arquivo na pasta 
 	for filename in os.listdir(path):
 		
-		# adiciono ao array no index idx_x a imagem e o label (que e o numero da pasta)
+		# abro a imagem
 		img = Image.open(os.path.join(path, filename))
+
+		# resize pro tamanho final esperado
 		img.thumbnail(size, Image.ANTIALIAS)
 
+		# converto para numpy array
 		img = np.asarray(img)
-		# img = crop_center(img, 128, 96)
+
+		# normalizo os valores da imagem 
+		image_data = (img.astype(float) - pixel_depth / 2) / pixel_depth
 		
-		X_arr[idx_x,] = img
+		X_arr[idx_x] = image_data
 		Y_arr[idx_x,] = idx_folder
 
-		idx_x = idx_x + 1
-
+		idx_x += 1
 	idx_folder += 1
-	
 
-print('X_arr shape:', X_arr.shape)
-print('Y_arr shape:', Y_arr.shape)
+print(X_arr[0][0])
+print('Mean: ', np.mean(X_arr))
+print('Standar Deviation: ', np.std(X_arr))
 
-print('image for label:', Y_arr[60])
-plot_image(X_arr[60, :, :])
-plt.show()
-
-#### SPLIT TRAINING DATA AND TEST DATA
+# split and shuffle the data
 from sklearn.model_selection import train_test_split
 X_train, X_test, Y_train, Y_test = train_test_split(X_arr, Y_arr, test_size=0.2, random_state=42)
 
-# plot_image(X_train[2, :, :])
-# plt.show()
-# sys.exit(0)
+print('X_train shape:', X_train.shape)
+print('Y_train shape:', Y_train.shape)
+print('X_test shape:', X_test.shape)
+print('Y_test shape:', Y_test.shape)
 
+# reshape for tensorflow
+def reformat(dataset, labels):
+	dataset = dataset.reshape((-1, img_height, img_width, n_channels)).astype(np.float32)
+	labels = (np.arange(n_labels) == labels[:,None]).astype(np.float32)
+	return dataset, labels
 
+train_dataset, train_labels = reformat(X_train, Y_train)
+test_dataset, test_labels = reformat(X_test, Y_test)
+print('Training set', train_dataset.shape, train_labels.shape)
+print('Test set', test_dataset.shape, test_labels.shape)
+print(test_labels[146])
 
-########## arquitetura da CNN: ResNet-34 - baseado no capítulo 13 do livro hands on machine learning
+def accuracy(predictions, labels):
+  return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
 
-# width * height = 9216
-X_train = np.reshape(X_train, (-1, 12288))
-X_test = np.reshape(X_test, (-1, 12288))
+batch_size = 80
 
-print(X_train.shape)
-print(X_test.shape)
-print(Y_train.shape)
-print(Y_test.shape)
+c1_depth = 6
+c1_ker_sz = 5
+c3_depth = 32
+c3_ker_sz = 6
+c5_depth = 120
+c5_ker_sz = 6
 
-height = 96
-width = 128
-channels = 1
-n_inputs = height * width
-
-conv1_fmaps = 32
-conv1_ksize = 3
-conv1_stride = 1
-conv1_pad = "SAME"
-
-conv2_fmaps = 64
-conv2_ksize = 3
-conv2_stride = 2
-conv2_pad = "SAME"
-
-pool3_fmaps = conv2_fmaps
-
-n_fc1 = 64
-n_outputs = n_labels
+num_hidden = 512
 
 graph = tf.Graph()
+
 with graph.as_default():
-	with tf.name_scope("inputs"):
-		X = tf.placeholder(tf.float32, shape=[None, n_inputs], name="X")
-		X_reshaped = tf.reshape(X, shape=[-1, height, width, channels])
-		y = tf.placeholder(tf.int32, shape=[None], name="y")
 
-	conv1 = tf.layers.conv2d(X_reshaped, filters=conv1_fmaps, kernel_size=conv1_ksize, strides=conv1_stride, padding=conv1_pad, activation=tf.nn.relu, name="conv1")
-	conv2 = tf.layers.conv2d(conv1, filters=conv2_fmaps, kernel_size=conv2_ksize, strides=conv2_stride, padding=conv2_pad, activation=tf.nn.relu, name="conv2")
+	# Input data.
+	tf_train_dataset = tf.placeholder(tf.float32, shape=(batch_size, img_height, img_width, n_channels))
+	tf_train_labels = tf.placeholder(tf.float32, shape=(batch_size, n_labels))
+	tf_test_dataset = tf.constant(test_dataset)
 
-	with tf.name_scope("pool3"):
-		pool3 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
-		pool3_flat = tf.reshape(pool3, shape=[-1, pool3_fmaps * 24 * 32])
+	c1_weights = tf.Variable(tf.truncated_normal([c1_ker_sz, c1_ker_sz, n_channels, c1_depth], stddev=0.1))
+	c1_biases = tf.Variable(tf.zeros([c1_depth]))
 
-	with tf.name_scope("fc1"):
-		fc1 = tf.layers.dense(pool3_flat, n_fc1, activation=tf.nn.relu, name="fc1")
+	c3_weights = tf.Variable(tf.truncated_normal([c3_ker_sz, c3_ker_sz, c1_depth, c3_depth], stddev=0.1))
+	c3_biases = tf.Variable(tf.constant(1.0, shape=[c3_depth]))
 
-	with tf.name_scope("output"):
-		logits = tf.layers.dense(fc1, n_outputs, name="output")
-		Y_proba = tf.nn.softmax(logits, name="Y_proba")
+	c5_weights = tf.Variable(tf.truncated_normal([c5_ker_sz, c5_ker_sz, c3_depth, c5_depth], stddev=0.1))
+	c5_biases = tf.Variable(tf.constant(1.0, shape=[c5_depth]))
+  
+	c5_conv_dim_h = (((((img_height+1)//2) + 1) // 2) + 1 )//2
+	c5_conv_dim_w = (((((img_width+1)//2) + 1) // 2) + 1 )//2
 
-	with tf.name_scope("train"):
-		xentropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=y)
-		loss = tf.reduce_mean(xentropy)
-		optimizer = tf.train.AdamOptimizer()
-		training_op = optimizer.minimize(loss)
+	fc_weights = tf.Variable(tf.truncated_normal([c5_conv_dim_h * c5_conv_dim_w * c5_depth, num_hidden], stddev=0.1))
+	fc_biases = tf.Variable(tf.constant(1.0, shape=[num_hidden]))
+  
+	out_weights = tf.Variable(tf.truncated_normal([num_hidden, n_labels], stddev=0.1))
+	out_biases = tf.Variable(tf.constant(1.0, shape=[n_labels]))
+  
+	# Model.
+	def model(data):
+		print(data.get_shape().as_list())
 
-	with tf.name_scope("eval"):
-		correct = tf.nn.in_top_k(logits, y, 1)
-		accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+		conv = tf.nn.conv2d(data, c1_weights, [1, 1, 1, 1], padding='SAME')
+		hidden = tf.nn.relu(conv + c1_biases)
+		print(conv.get_shape().as_list())
 
-	with tf.name_scope("init_and_save"):
-		init = tf.global_variables_initializer()
-		saver = tf.train.Saver()
+		pooled = tf.nn.max_pool(hidden, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
+		print(pooled.get_shape().as_list())
 
+		conv = tf.nn.conv2d(pooled, c3_weights, [1, 1, 1, 1], padding='SAME')
+		hidden = tf.nn.relu(conv + c3_biases)
+		pooled = tf.nn.max_pool(hidden, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
+		shape = pooled.get_shape().as_list()
+		print(shape)
 
-# get the model state
-def get_model_params():
-	gvars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-	return {gvar.op.name: value for gvar, value in zip(gvars, tf.get_default_session().run(gvars))}
+		conv = tf.nn.conv2d(pooled, c5_weights, [1, 1, 1, 1], padding='SAME')
+		hidden = tf.nn.relu(conv + c5_biases)
+		pooled = tf.nn.max_pool(hidden, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
+		shape = pooled.get_shape().as_list()
+		print(shape)
 
-# restore a previous state
-def restore_model_params(model_params):
-	gvar_names = list(model_params.keys())
-	assign_ops = {gvar_name: tf.get_default_graph().get_operation_by_name(gvar_name + "/Assign")
-				  for gvar_name in gvar_names}
-	init_values = {gvar_name: assign_op.inputs[1] for gvar_name, assign_op in assign_ops.items()}
-	feed_dict = {init_values[gvar_name]: model_params[gvar_name] for gvar_name in gvar_names}
-	tf.get_default_session().run(assign_ops, feed_dict=feed_dict)
+		reshape = tf.reshape(pooled, [shape[0], shape[1] * shape[2] * shape[3]])
+		hidden = tf.nn.relu(tf.matmul(reshape, fc_weights) + fc_biases)
 
+		return tf.matmul(hidden, out_weights) + out_biases
+  
+	# Training computation.
+	logits = model(tf_train_dataset)
+	loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf_train_labels, logits=logits))
+	
+	# Optimizer.
+	# optimizer = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
+	optimizer = tf.train.AdagradOptimizer(0.001).minimize(loss)
 
+	# batch = tf.Variable(0)
+	# learning_rate = tf.train.exponential_decay(
+	#    0.01,                # Base learning rate.
+	#    batch * batch_size,  # Current index into the dataset.
+	#    train_labels.shape[0],          # Decay step.
+	#    0.95,                # Decay rate.
+	#    staircase=True)
+	# optimizer = tf.train.MomentumOptimizer(0.001, 0.9).minimize(loss, global_step=batch)
+	  
+	# Predictions for the training, validation, and test data.
+	train_prediction = tf.nn.softmax(logits)
+	test_prediction = tf.nn.softmax(model(tf_test_dataset))
 
-## treinando a parada toda
-n_epochs = 35
-batch_size = 20
-best_model_params = None 
+	saver = tf.train.Saver()
 
-with tf.Session(graph=graph) as sess:
-	init.run()
-	for epoch in range(n_epochs):
-		offset = (epoch * batch_size) % (Y_train.shape[0] - batch_size)
-		batch_data = X_train[offset:(offset + batch_size), :]
-		batch_labels = Y_train[offset:(offset + batch_size)]
+num_steps = 1000
+with tf.Session(graph=graph) as session:
+	tf.global_variables_initializer().run()
+	print('Initialized')
 
-		sess.run(training_op, feed_dict={X: batch_data, y: batch_labels})
-		acc_train = accuracy.eval(feed_dict={X: X_train, y: Y_train})
-		acc_test = accuracy.eval(feed_dict={X: X_test, y: Y_test})
-		print(epoch, "Train accuracy:", acc_train, "Test accuracy:", acc_test)
+	for step in range(num_steps):
+		offset = (step * batch_size) % (train_labels.shape[0] - batch_size)
+		batch_data = train_dataset[offset:(offset + batch_size), :]
+		batch_labels = train_labels[offset:(offset + batch_size), :]
+		feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels}
 
-	if best_model_params:
-		restore_model_params(best_model_params)
+		_, l, predictions = session.run([optimizer, loss, train_prediction], feed_dict=feed_dict)
 
-	save_path = saver.save(sess, "Data/gestos/model_gestos.ckpt")
+		if (step % 20 == 0):
+			print('Minibatch loss at step %d: %f' % (step, l))
+			print('Minibatch accuracy: %.1f%%' % accuracy(predictions, batch_labels))
+			print('Test accuracy: %.1f%%' % accuracy(test_prediction.eval(), test_labels))
 
+	save_path = saver.save(session, "Data/checkpoints/model_gestos2.ckpt")
