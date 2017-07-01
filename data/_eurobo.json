@@ -1,0 +1,135 @@
+﻿{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "hi",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "hello",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "morning, bot",
+        "intent": "greet",
+        "entities": [
+          {
+            "start": 0,
+            "end": 7,
+            "value": "morning",
+            "entity": "time"
+          }
+        ]
+      },
+      {
+        "text": "hey, bot. How goes?",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "whats up",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "How are you today?",
+        "intent": "greet",
+        "entities": [
+          {
+            "start": 12,
+            "end": 17,
+            "value": "today",
+            "entity": "time"
+          }
+        ]
+      },
+      {
+        "text": "bye, bot",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "cya",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "see you later",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "ok bot, i'm leaving now",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "I need you to learn something",
+        "intent": "bot_learning",
+        "entities": []
+      },
+      {
+        "text": "learn the command",
+        "intent": "bot_learning",
+        "entities": []
+      },
+      {
+        "text": "create a new command",
+        "intent": "bot_learning",
+        "entities": []
+      },
+      {
+        "text": "create command",
+        "intent": "bot_learning",
+        "entities": []
+      },
+      {
+        "text": "google for",
+        "intent": "web_search",
+        "entities": []
+      },
+      {
+        "text": "search the web for",
+        "intent": "web_search",
+        "entities": []
+      },
+      {
+        "text": "bring me something about",
+        "intent": "web_search",
+        "entities": []
+      },
+      {
+        "text": "give me some info about",
+        "intent": "web_search",
+        "entities": []
+      },
+      {
+        "text": "yes",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "yep",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "indeed",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "sure",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "of course",
+        "intent": "affirm",
+        "entities": []
+      }
+    ]
+  }
+}

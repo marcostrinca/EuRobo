@@ -101,7 +101,7 @@ def testGestures(capture):
 		img = np.asarray(frame)
 		img = (img.astype(float) - 255 / 2) / 255
 
-		# cv2.imshow(windowsName, frame)
+		cv2.imshow(windowsName, frame)
 		if cv2.waitKey(1) & 0xFF == ord("q"):
 		    break
 
@@ -202,7 +202,7 @@ def getFacesToTrain(capture, emo, iteractions):
 
 			# salvo as imagens no disco
 			print("Salvando imagem to:", 'Data/images/{0}/img_{1}.jpg'.format(emo, count))
-			cv2.imwrite('Data/images/{0}/img_{1}.jpg'.format(emo, count), face_img)
+			cv2.imwrite('data/images/{0}/img_{1}.jpg'.format(emo, count), face_img)
 
 			count = count + 1
 			time.sleep(0.33)
@@ -308,7 +308,7 @@ def predict_faces(img):
 
 	# predict
 	with tf.Session(graph=graph) as sess:
-		saver.restore(sess, 'Data/model_seeing.ckpt')
+		saver.restore(sess, 'data/model_seeing.ckpt')
 		Z = logits.eval(feed_dict={X: img})
 		prediction=np.argmax(Z, axis=1)
 
@@ -376,7 +376,7 @@ def predict_gestures(img):
 
 	# predict
 	with tf.Session(graph=graph) as sess:
-		saver.restore(sess, 'Data/gestos/model_gestos.ckpt')
+		saver.restore(sess, 'data/gestos/model_gestos.ckpt')
 		Z = logits.eval(feed_dict={X: img})
 		prediction=np.argmax(Z, axis=1)
 
@@ -465,7 +465,7 @@ def predict_gestures2(img):
 
 	# predict
 	with tf.Session(graph=graph) as sess:
-		saver.restore(sess, 'Data/checkpoints/model_gestos2.ckpt')
+		saver.restore(sess, 'data/checkpoints/model_gestos2.ckpt')
 		Z = logits.eval(feed_dict={tf_train_dataset: img})
 		# print(Z)
 		# prediction=np.argmax(Z, axis=1)

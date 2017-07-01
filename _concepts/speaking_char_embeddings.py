@@ -25,8 +25,6 @@ vocabulary_size = len(vocabulary_chars)
 print(vocabulary_size)
 print(vocabulary_chars)
 
-
-
 def char2id(char):
   if char in sorted(vocabulary_chars):
     return ord(char)
@@ -48,21 +46,28 @@ num_unrollings=10
 
 # class to generate batches
 class BatchGenerator(object):
-  def __init__(self, text, batch_size, num_unrollings):
-    self._text = text
-    self._text_size = len(text)
+  def __init__(self, mytext, batch_size, num_unrollings):
+    self._mytext = mytext
+    self._mytext_size = len(mytext)
+    print(self._mytext_size)
     self._batch_size = batch_size
     self._num_unrollings = num_unrollings
-    segment = self._text_size // batch_size
+    segment = self._mytext_size // batch_size
+    print("segment:")
+    print(segment)
     self._cursor = [ offset * segment for offset in range(batch_size)]
+    print("cursor:")
+    print(self._cursor)
     self._last_batch = self._next_batch()
   
   def _next_batch(self):
     """Generate a single batch from the current cursor position in the data."""
     batch = np.zeros(shape=(self._batch_size, vocabulary_size), dtype=np.float)
     for b in range(self._batch_size):
-      batch[b, char2id(self._text[self._cursor[b]])] = 1.0
-      self._cursor[b] = (self._cursor[b] + 1) % self._text_size
+      print("self.cursor b")
+      print(self._cursor[b])
+      batch[b, char2id(self._mytext[self._cursor[b]])] = 1.0
+      self._cursor[b] = (self._cursor[b] + 1) % self._mytext_size
     return batch
   
   def next(self):
